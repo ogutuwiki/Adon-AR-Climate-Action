@@ -1,0 +1,48 @@
+
+export interface EmissionData {
+  id?: string;
+  userId: string;
+  date: string; // ISO string
+  category: 'cooking' | 'food' | 'waste' | 'clothing' | 'necessities' | 'transport';
+  value: number; // e.g., kg of charcoal, km driven, kg of waste
+  unit: string; // e.g., 'kg', 'km', 'liters'
+  co2e: number; // Calculated CO2 equivalent
+  notes?: string;
+}
+
+export interface UserProfile {
+  uid: string;
+  displayName: string | null;
+  email: string | null;
+  photoURL?: string | null;
+  carbonCredits?: number;
+  monthlyGoal?: number; // Target CO2e reduction
+  // Add more fields as needed
+}
+
+export interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  iconUrl: string; // URL to the badge icon
+  unlockedAt?: string; // ISO string
+}
+
+export interface Reward {
+  id: string;
+  name: string;
+  description: string;
+  cost: number; // Carbon credits needed
+  type: 'mobile_money' | 'goods' | 'voucher';
+  imageUrl?: string;
+}
+
+export interface GameLink {
+  id: string;
+  title: string;
+  platform: 'TikTok' | 'Snapchat' | 'Other';
+  url: string;
+  thumbnailUrl: string;
+  dataAiHint?: string;
+  description?: string;
+}
