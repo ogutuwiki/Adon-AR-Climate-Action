@@ -1,8 +1,8 @@
 
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
-import { getAnalytics } from "firebase/analytics";
+// import { getAnalytics } from "firebase/analytics";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -20,5 +20,6 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 // const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null; // Conditional initialization
 
-export { app, auth, db };
+export { app, auth, db, GoogleAuthProvider };
 // export { app, auth, db, analytics };
+
