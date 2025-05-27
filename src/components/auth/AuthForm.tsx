@@ -75,7 +75,7 @@ export function AuthForm({ mode }: AuthFormProps) {
       } else if (errorCode === "auth/invalid-email") {
         errorMessage = "The email address is not valid.";
       } else if (errorCode === "auth/operation-not-allowed") {
-        errorMessage = "Email/password accounts are not enabled.";
+        errorMessage = "Email/password accounts are not enabled. Please check your Firebase console.";
       } else if (errorCode === "auth/weak-password") {
         errorMessage = "The password is too weak.";
       } else if (errorCode === "auth/user-not-found" || errorCode === "auth/wrong-password" || errorCode === "auth/invalid-credential") {
@@ -101,6 +101,10 @@ export function AuthForm({ mode }: AuthFormProps) {
         errorMessage = "Sign-in popup closed. Please try again.";
       } else if (errorCode === "auth/account-exists-with-different-credential") {
         errorMessage = "An account already exists with this email using a different sign-in method.";
+      } else if (errorCode === "auth/operation-not-allowed") {
+        errorMessage = "Google Sign-In is not enabled for this project. Please check your Firebase console.";
+      } else if (errorCode === "auth/popup-blocked") {
+        errorMessage = "Google Sign-In popup was blocked by the browser. Please disable your popup blocker and try again.";
       }
       toast({ title: "Google Sign-In Failed", description: errorMessage, variant: "destructive" });
     } finally {
