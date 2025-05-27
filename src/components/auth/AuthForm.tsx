@@ -15,8 +15,8 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, signInWithPopup } from "firebase/auth";
-import { auth, GoogleAuthProvider } from "@/lib/firebase";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
@@ -68,6 +68,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         router.push("/dashboard");
       }
     } catch (error: any) {
+      console.error("Firebase Auth Error (Email/Password):", error);
       const errorCode = error.code;
       let errorMessage = "An unexpected error occurred. Please try again.";
       if (errorCode === "auth/email-already-in-use") {
@@ -80,6 +81,8 @@ export function AuthForm({ mode }: AuthFormProps) {
         errorMessage = "The password is too weak.";
       } else if (errorCode === "auth/user-not-found" || errorCode === "auth/wrong-password" || errorCode === "auth/invalid-credential") {
         errorMessage = "Invalid email or password. Please try again.";
+      } else {
+        errorMessage = error.message || errorMessage; // Use Firebase's message if available
       }
       toast({ title: mode === "signup" ? "Signup Failed" : "Login Failed", description: errorMessage, variant: "destructive" });
     } finally {
@@ -95,6 +98,7 @@ export function AuthForm({ mode }: AuthFormProps) {
       toast({ title: "Signed In with Google!", description: "Welcome to AdonAR." });
       router.push("/dashboard");
     } catch (error: any) {
+      console.error("Firebase Auth Error (Google Sign-In):", error);
       const errorCode = error.code;
       let errorMessage = "Could not sign in with Google. Please try again.";
       if (errorCode === "auth/popup-closed-by-user") {
@@ -105,6 +109,12 @@ export function AuthForm({ mode }: AuthFormProps) {
         errorMessage = "Google Sign-In is not enabled for this project. Please check your Firebase console.";
       } else if (errorCode === "auth/popup-blocked") {
         errorMessage = "Google Sign-In popup was blocked by the browser. Please disable your popup blocker and try again.";
+      } else if (errorCode === "auth/cancelled-popup-request") {
+        errorMessage = "Sign-in popup was cancelled. Please try again if this was unintentional.";
+      } else if (errorCode === "auth/popup-already-opened") {
+        errorMessage = "A sign-in popup is already open. Please complete or close the existing popup.";
+      } else {
+        errorMessage = error.message || errorMessage; // Use Firebase's message if available
       }
       toast({ title: "Google Sign-In Failed", description: errorMessage, variant: "destructive" });
     } finally {
