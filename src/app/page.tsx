@@ -3,24 +3,26 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/useAuth';
-import { Skeleton } from '@/components/ui/skeleton';
+// import { useAuth } from '@/hooks/useAuth'; // No longer needed for this temporary setup
+// import { Skeleton } from '@/components/ui/skeleton'; // No longer needed
 
 export default function HomePage() {
-  const { user, loading } = useAuth();
+  // const { user, loading } = useAuth(); // Temporarily bypass auth check
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading) {
-      if (user) {
-        router.replace('/dashboard');
-      } else {
-        router.replace('/login');
-      }
-    }
-  }, [user, loading, router]);
+    // if (!loading) {
+    //   if (user) {
+    //     router.replace('/dashboard');
+    //   } else {
+    //     router.replace('/login');
+    //   }
+    // }
+    // For viewing purposes, redirect directly to dashboard
+    router.replace('/dashboard');
+  }, [router]);
 
-  // Show a loading state while checking auth status
+  // Show a loading state while redirecting
   return (
     <div className="flex h-screen w-screen items-center justify-center bg-background">
        <div className="flex flex-col items-center space-y-2">

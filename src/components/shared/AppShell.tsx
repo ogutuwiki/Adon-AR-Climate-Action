@@ -66,6 +66,13 @@ const navItems: NavItem[] = [
   { href: "/games", label: "AR Games", icon: Gamepad2 },
 ];
 
+const mockUserForDisplay = {
+  uid: 'mock-user-uid',
+  photoURL: '', // You can use a placeholder image URL here if you want
+  displayName: 'Guest User',
+  email: 'guest@example.com',
+};
+
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -73,17 +80,18 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const [openSubmenus, setOpenSubmenus] = React.useState<Record<string, boolean>>({});
 
-  React.useEffect(() => {
-    if (!loading && !user) {
-      router.replace("/login");
-    }
-  }, [user, loading, router]);
+  // React.useEffect(() => {
+  //   // Temporarily disable redirect to login for viewing purposes
+  //   // if (!loading && !user) {
+  //   //   router.replace("/login");
+  //   // }
+  // }, [user, loading, router]);
 
   const handleLogout = async () => {
     try {
       await signOut(auth);
       toast({ title: "Logged Out", description: "You have been successfully logged out." });
-      router.push("/login");
+      router.push("/login"); // Logout should still go to login
     } catch (error) {
       toast({ title: "Logout Failed", description: "Could not log you out. Please try again.", variant: "destructive" });
     }
@@ -93,7 +101,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     setOpenSubmenus(prev => ({ ...prev, [label]: !prev[label] }));
   };
 
-  if (loading || !user) {
+  if (loading) { // Still show loading initially while auth state is being determined
     return (
        <div className="flex h-screen w-screen items-center justify-center bg-background">
          <div className="flex flex-col items-center space-y-2">
@@ -104,8 +112,10 @@ export function AppShell({ children }: { children: ReactNode }) {
     );
   }
 
+  const displayUser = user || mockUserForDisplay;
+
   const getInitials = (name: string | null | undefined) => {
-    if (!name) return "U";
+    if (!name) return "GU"; // Guest User initials
     return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0,2);
   }
 
@@ -191,16 +201,16 @@ export function AppShell({ children }: { children: ReactNode }) {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                   <Avatar className="h-9 w-9 border border-muted">
-                    <AvatarImage src={user.photoURL || undefined} alt={user.displayName || "User"} />
-                    <AvatarFallback className="bg-primary text-primary-foreground">{getInitials(user.displayName)}</AvatarFallback>
+                    <AvatarImage src={displayUser.photoURL || undefined} alt={displayUser.displayName || "User"} />
+                    <AvatarFallback className="bg-primary text-primary-foreground">{getInitials(displayUser.displayName)}</AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{user.displayName || "User"}</p>
-                    <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+                    <p className="text-sm font-medium leading-none">{displayUser.displayName || "User"}</p>
+                    <p className="text-xs leading-none text-muted-foreground">{displayUser.email}</p>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
