@@ -1,5 +1,4 @@
 
-'use server';
 import type { LucideIcon } from 'lucide-react';
 import { Flame, Apple, Trash2, Shirt, ShoppingCart, Car } from 'lucide-react';
 
