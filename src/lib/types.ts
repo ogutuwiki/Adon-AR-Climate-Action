@@ -4,6 +4,7 @@ export interface EmissionData {
   userId: string;
   date: string; // ISO string
   category: 'cooking' | 'food' | 'waste' | 'clothing' | 'necessities' | 'transport';
+  itemDescription: string; // Changed from 'item' to be more specific
   value: number; // e.g., kg of charcoal, km driven, kg of waste
   unit: string; // e.g., 'kg', 'km', 'liters'
   co2e: number; // Calculated CO2 equivalent
@@ -35,6 +36,7 @@ export interface Reward {
   cost: number; // Carbon credits needed
   type: 'mobile_money' | 'goods' | 'voucher';
   imageUrl?: string;
+  dataAiHint?: string;
 }
 
 export interface GameLink {
