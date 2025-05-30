@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -19,45 +18,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
-import { Loader2, Flame, Apple, Trash2, Shirt, ShoppingCart, Leaf, Car } from "lucide-react";
+import { Loader2, Leaf, ListTree } from "lucide-react";
 import type { EmissionData } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-
-const emissionCategories = [
-  { value: "cooking", label: "Cooking Fuel", icon: Flame },
-  { value: "food", label: "Food Consumption", icon: Apple },
-  { value: "waste", label: "Waste Generation", icon: Trash2 },
-  { value: "clothing", label: "Clothing & Apparel", icon: Shirt },
-  { value: "necessities", label: "Daily Necessities", icon: ShoppingCart },
-  { value: "transport", label: "Transport", icon: Car },
-] as const;
-
-type EmissionCategoryValue = typeof emissionCategories[number]['value'];
+import { emissionCategoryDetails, type ItemOption, type UnitOption, type EmissionCategoryValue } from "@/lib/emission-data-utils";
 
 const formSchema = z.object({
-  category: z.enum(emissionCategories.map(c => c.value) as [EmissionCategoryValue, ...EmissionCategoryValue[]], {
-    required_error: "Please select an emission category.",
-  }),
-  item: z.string().min(2, { message: "Item description must be at least 2 characters." }),
-  quantity: z.coerce.number().min(0.1, { message: "Quantity must be greater than 0." }),
-  unit: z.string().min(1, { message: "Unit is required (e.g., kg, liters, items, km)." }),
+  category: z.custom<EmissionCategoryValue>(
+    (val) => typeof val === 'string' && Object.keys(emissionCategoryDetails).includes(val),
+    { required_error: "Please select an emission category." }
+  ),
+  item: z.string().min(1, { message: "Please select an item/activity." }),
+  quantity: z.coerce.number().min(0.01, { message: "Quantity must be greater than 0." }),
+  unit: z.string().min(1, { message: "Please select a unit." }),
   notes: z.string().optional(),
 });
 
 type EmissionFormValues = z.infer<typeof formSchema>;
 
-const co2eFactors: Record<EmissionCategoryValue, Record<string, number>> = {
-  cooking: { "kg": 2.5, "liters": 1.8 },
-  food: { "kg": 5.0, "item": 1.2 },
-  waste: { "kg": 0.5 },
-  clothing: { "item": 10.0 },
-  necessities: { "item": 2.0 },
-  transport: { "km": 0.21 }, // Average for a passenger car
-};
-
 interface EmissionFormProps {
   onLogEmission: (data: EmissionData) => void;
-  // Temporarily accept userId until auth is fixed
   userId?: string | null;
 }
 
@@ -65,6 +45,9 @@ export function EmissionForm({ onLogEmission, userId }: EmissionFormProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [calculatedCO2e, setCalculatedCO2e] = useState<number | null>(null);
+
+  const [availableItems, setAvailableItems] = useState<ItemOption[]>([]);
+  const [availableUnits, setAvailableUnits] = useState<UnitOption[]>([]);
 
   const form = useForm<EmissionFormValues>({
     resolver: zodResolver(formSchema),
@@ -80,13 +63,38 @@ export function EmissionForm({ onLogEmission, userId }: EmissionFormProps) {
   const watchCategory = form.watch("category");
   const watchQuantity = form.watch("quantity");
   const watchUnit = form.watch("unit");
+  const watchItem = form.watch("item");
+
 
   useEffect(() => {
+    if (watchCategory) {
+      const categoryData = emissionCategoryDetails[watchCategory];
+      setAvailableItems(categoryData.items);
+      setAvailableUnits(categoryData.units);
+      // Reset item and unit only if the available options don't include the current value
+      if (watchItem && !categoryData.items.find(i => i.value === watchItem)) {
+        form.resetField("item", { defaultValue: "" });
+      }
+      if (watchUnit && !categoryData.units.find(u => u.value === watchUnit)) {
+         form.resetField("unit", { defaultValue: "" });
+      }
+      setCalculatedCO2e(null);
+    } else {
+      setAvailableItems([]);
+      setAvailableUnits([]);
+      form.resetField("item", { defaultValue: "" });
+      form.resetField("unit", { defaultValue: "" });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchCategory, form]); // watchItem and watchUnit removed to prevent reset loops on initial load with values
+
+ useEffect(() => {
     if (watchCategory && watchQuantity > 0 && watchUnit) {
-      const factorCategory = co2eFactors[watchCategory];
-      const factor = factorCategory ? factorCategory[watchUnit.toLowerCase()] : undefined;
-      if (factor) {
-        setCalculatedCO2e(parseFloat((watchQuantity * factor).toFixed(2)));
+      const categoryData = emissionCategoryDetails[watchCategory];
+      const selectedUnitInfo = categoryData.units.find(u => u.value === watchUnit);
+      
+      if (selectedUnitInfo) {
+        setCalculatedCO2e(parseFloat((watchQuantity * selectedUnitInfo.co2eFactor).toFixed(2)));
       } else {
         setCalculatedCO2e(null);
       }
@@ -102,37 +110,43 @@ export function EmissionForm({ onLogEmission, userId }: EmissionFormProps) {
     const co2e = calculatedCO2e;
 
     if (co2e === null) {
-        toast({ title: "Calculation Error", description: "Could not calculate CO2e. Check units or ensure factors are defined for this category/unit.", variant: "destructive" });
+        toast({ title: "Calculation Error", description: "Could not calculate CO2e. Ensure quantity is entered and unit is compatible.", variant: "destructive" });
         setIsLoading(false);
         return;
     }
 
+    const categoryData = emissionCategoryDetails[values.category];
+    const itemLabel = categoryData.items.find(i => i.value === values.item)?.label || values.item;
+    const unitLabel = categoryData.units.find(u => u.value === values.unit)?.label || values.unit;
+
     const newEmissionEntry: EmissionData = {
-      id: Date.now().toString(), // Simple unique ID for client-side
-      userId: userId || "mock-user-id", // Use passed userId or fallback
+      id: Date.now().toString(), 
+      userId: userId || "mock-user-id", 
       date: new Date().toISOString(),
       category: values.category,
-      itemDescription: values.item,
+      itemValue: values.item,
+      itemLabel: itemLabel,
       value: values.quantity,
-      unit: values.unit,
+      unitValue: values.unit,
+      unitLabel: unitLabel,
       co2e: co2e,
       notes: values.notes,
     };
 
     try {
-      // Call the handler passed from the parent page
       onLogEmission(newEmissionEntry);
-
       toast({
         title: "Emission Logged!",
         description: (
           <div className="flex items-center">
             <Leaf className="h-5 w-5 mr-2 text-primary" />
-            <span>Successfully tracked {values.item} ({co2e} kg CO₂e).</span>
+            <span>Successfully tracked {itemLabel} ({co2e} kg CO₂e).</span>
           </div>
         ),
       });
       form.reset();
+      setAvailableItems([]);
+      setAvailableUnits([]);
       setCalculatedCO2e(null);
     } catch (error) {
       console.error("Error logging emission:", error);
@@ -141,6 +155,12 @@ export function EmissionForm({ onLogEmission, userId }: EmissionFormProps) {
       setIsLoading(false);
     }
   }
+  
+  const categoryOptions = Object.entries(emissionCategoryDetails).map(([value, { label, icon: Icon }]) => ({
+    value: value as EmissionCategoryValue,
+    label,
+    Icon,
+  }));
 
   return (
     <Form {...form}>
@@ -152,17 +172,17 @@ export function EmissionForm({ onLogEmission, userId }: EmissionFormProps) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Category</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select an emission category" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {emissionCategories.map((cat) => (
+                    {categoryOptions.map((cat) => (
                       <SelectItem key={cat.value} value={cat.value}>
                         <div className="flex items-center">
-                          <cat.icon className="h-4 w-4 mr-2 text-muted-foreground" />
+                          <cat.Icon className="h-4 w-4 mr-2 text-muted-foreground" />
                           {cat.label}
                         </div>
                       </SelectItem>
@@ -179,13 +199,21 @@ export function EmissionForm({ onLogEmission, userId }: EmissionFormProps) {
             name="item"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Item / Activity Description</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g., Charcoal, Beef, Car Trip to City" {...field} />
-                </FormControl>
-                <FormDescription>
-                  Specific item or activity you are tracking.
-                </FormDescription>
+                <FormLabel>Item / Activity</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value} disabled={!watchCategory || availableItems.length === 0}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select an item/activity" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {availableItems.map((itemOpt) => (
+                      <SelectItem key={itemOpt.value} value={itemOpt.value}>
+                        {itemOpt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
@@ -193,7 +221,7 @@ export function EmissionForm({ onLogEmission, userId }: EmissionFormProps) {
         </div>
 
         <div className="grid md:grid-cols-2 gap-6">
-          <FormField
+           <FormField
             control={form.control}
             name="quantity"
             render={({ field }) => (
@@ -206,19 +234,26 @@ export function EmissionForm({ onLogEmission, userId }: EmissionFormProps) {
               </FormItem>
             )}
           />
-
           <FormField
             control={form.control}
             name="unit"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Unit</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g., kg, liters, items, km" {...field} />
-                </FormControl>
-                <FormDescription>
-                  Unit of measurement for the quantity.
-                </FormDescription>
+                <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value} disabled={!watchCategory || availableUnits.length === 0}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a unit" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {availableUnits.map((unitOpt) => (
+                      <SelectItem key={unitOpt.value} value={unitOpt.value}>
+                        {unitOpt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
@@ -233,7 +268,7 @@ export function EmissionForm({ onLogEmission, userId }: EmissionFormProps) {
               <FormLabel>Notes (Optional)</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="Add any relevant details, e.g., brand, origin, type of fuel, trip purpose..."
+                  placeholder="Add any relevant details..."
                   className="resize-none"
                   {...field}
                 />
@@ -255,13 +290,12 @@ export function EmissionForm({ onLogEmission, userId }: EmissionFormProps) {
         )}
          {watchCategory && watchQuantity > 0 && watchUnit && calculatedCO2e === null && (
              <Alert variant="destructive">
-                <AlertTitle>Calculation Unavailable</AlertTitle>
+                <AlertTitle>Calculation Issue</AlertTitle>
                 <AlertDescription>
-                    We couldn&apos;t calculate CO₂e for the unit &quot;{watchUnit}&quot; in the &quot;{emissionCategories.find(c => c.value === watchCategory)?.label}&quot; category. Please check your unit or ensure factors are defined (e.g., kg, item, liter, km).
+                    Could not calculate CO₂e. Please ensure the selected unit is appropriate for the category and quantity.
                 </AlertDescription>
             </Alert>
          )}
-
 
         <Button type="submit" className="w-full md:w-auto bg-primary hover:bg-primary/90 text-primary-foreground" disabled={isLoading}>
           {isLoading ? (
@@ -277,3 +311,5 @@ export function EmissionForm({ onLogEmission, userId }: EmissionFormProps) {
     </Form>
   );
 }
+
+    

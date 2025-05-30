@@ -8,26 +8,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { EmissionData } from "@/lib/types";
 import { format } from "date-fns";
-import { useAuth } from "@/hooks/useAuth"; // To get user ID if auth was working
+import { useAuth } from "@/hooks/useAuth";
+import { emissionCategoryDetails, type EmissionCategoryValue } from "@/lib/emission-data-utils";
 
 export default function CalculatorPage() {
   const [emissionEntries, setEmissionEntries] = useState<EmissionData[]>([]);
-  const { user } = useAuth(); // Get user for userId, will be null if not logged in
+  const { user } = useAuth(); 
 
   const handleLogEmission = (newEntry: EmissionData) => {
     setEmissionEntries(prevEntries => [newEntry, ...prevEntries]);
   };
 
-  const getCategoryLabel = (value: string) => {
-    const categories = [
-      { value: "cooking", label: "Cooking Fuel" },
-      { value: "food", label: "Food Consumption" },
-      { value: "waste", label: "Waste Generation" },
-      { value: "clothing", label: "Clothing & Apparel" },
-      { value: "necessities", label: "Daily Necessities" },
-      { value: "transport", label: "Transport" },
-    ];
-    return categories.find(cat => cat.value === value)?.label || value;
+  const getCategoryLabel = (value: EmissionCategoryValue) => {
+    return emissionCategoryDetails[value]?.label || value;
   }
 
   return (
@@ -40,12 +33,12 @@ export default function CalculatorPage() {
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle>Log Your Emissions</CardTitle>
-          <CardDescription>Fill in the details for any relevant categories. Only enter what you know.</CardDescription>
+          <CardDescription>Select a category, then choose the item, quantity, and unit.</CardDescription>
         </CardHeader>
         <CardContent>
           <EmissionForm 
             onLogEmission={handleLogEmission}
-            userId={user?.uid} // Pass the actual user ID if available
+            userId={user?.uid} 
           />
         </CardContent>
       </Card>
@@ -75,9 +68,9 @@ export default function CalculatorPage() {
                   <TableRow key={entry.id}>
                     <TableCell>{format(new Date(entry.date), "MMM d, yyyy")}</TableCell>
                     <TableCell>{getCategoryLabel(entry.category)}</TableCell>
-                    <TableCell>{entry.itemDescription}</TableCell>
+                    <TableCell>{entry.itemLabel}</TableCell>
                     <TableCell className="text-right">{entry.value}</TableCell>
-                    <TableCell>{entry.unit}</TableCell>
+                    <TableCell>{entry.unitLabel}</TableCell>
                     <TableCell className="text-right">{entry.co2e.toFixed(2)}</TableCell>
                   </TableRow>
                 ))}
@@ -92,3 +85,5 @@ export default function CalculatorPage() {
     </div>
   );
 }
+
+    

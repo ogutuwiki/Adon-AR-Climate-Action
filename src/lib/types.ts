@@ -1,12 +1,16 @@
 
+import type { EmissionCategoryValue } from "./emission-data-utils";
+
 export interface EmissionData {
   id?: string;
   userId: string;
   date: string; // ISO string
-  category: 'cooking' | 'food' | 'waste' | 'clothing' | 'necessities' | 'transport';
-  itemDescription: string; // Changed from 'item' to be more specific
-  value: number; // e.g., kg of charcoal, km driven, kg of waste
-  unit: string; // e.g., 'kg', 'km', 'liters'
+  category: EmissionCategoryValue;
+  itemValue: string; 
+  itemLabel: string;
+  value: number; // quantity (e.g., kg of charcoal, km driven)
+  unitValue: string; 
+  unitLabel: string;
   co2e: number; // Calculated CO2 equivalent
   notes?: string;
 }
@@ -48,3 +52,5 @@ export interface GameLink {
   dataAiHint?: string;
   description?: string;
 }
+
+    
