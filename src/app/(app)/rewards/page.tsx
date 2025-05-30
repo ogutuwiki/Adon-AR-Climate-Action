@@ -1,6 +1,6 @@
 
 import { PageHeader } from "@/components/shared/PageHeader";
-import { Gift, Award, ShieldCheck, Users, ShoppingBag, Smartphone } from "lucide-react";
+import { Gift, Award, ShieldCheck, Users, ShoppingBag, Smartphone, HelpCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
@@ -99,6 +99,35 @@ export default function RewardsPage() {
         </div>
       </div>
       
+      <Card className="shadow-lg">
+        <CardHeader>
+          <div className="flex items-center space-x-2">
+            <HelpCircle className="h-6 w-6 text-primary" />
+            <CardTitle className="text-xl">Understanding Your Carbon Credits</CardTitle>
+          </div>
+          <CardDescription>Learn how your actions on AdonAR contribute to real-world climate solutions.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm text-muted-foreground">
+          <p>
+            The Carbon Credits you earn on AdonAR represent tangible contributions to environmental projects.
+            We partner with organizations that run verified carbon offset initiatives, such as reforestation,
+            renewable energy development, and community-based conservation efforts.
+          </p>
+          <p>
+            These projects are audited by independent, internationally recognized standards to ensure they
+            deliver real, measurable, and additional emission reductions.
+          </p>
+          <p>
+            Your engagement on AdonAR—tracking emissions, completing challenges, and learning—helps us
+            support and fund these vital projects. When credits are used, they are "retired," meaning
+            they cannot be used again, ensuring a permanent positive impact.
+          </p>
+          <p>
+            Together, we're making a difference!
+          </p>
+        </CardContent>
+      </Card>
+
       <div>
         <h2 className="text-2xl font-semibold mb-4 flex items-center"><Users className="mr-2 h-6 w-6 text-primary" />Community Leaderboard (Optional)</h2>
         <Card className="shadow-lg">
