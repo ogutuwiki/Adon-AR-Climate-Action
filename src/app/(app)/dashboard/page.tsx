@@ -1,4 +1,6 @@
 
+"use client";
+
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { LayoutDashboard, PlusCircle, Zap, Lightbulb, Flame, Star, HelpCircleIcon } from "lucide-react";
@@ -15,6 +17,7 @@ import {
 import { EmissionsChart } from "@/components/dashboard/EmissionsChart";
 import { PersonalizedTipsClient } from "@/components/dashboard/PersonalizedTipsClient";
 import { DynamicChallengeClient } from "@/components/dashboard/DynamicChallengeClient";
+import { useState, useEffect } from "react";
 
 // Mock data
 const carbonCredits = 1250;
@@ -43,6 +46,22 @@ const quickFactOfTheDay = {
 };
 
 export default function DashboardPage() {
+  const [showCarouselArrows, setShowCarouselArrows] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const itemsToShowBeforeArrows = window.innerWidth < 640 ? 3 : window.innerWidth < 1024 ? 4 : 5;
+      setShowCarouselArrows(achievements.length > itemsToShowBeforeArrows);
+    };
+
+    // Set initial state
+    handleResize();
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []); // Empty dependency array ensures this runs once on mount and cleanup on unmount
+
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -125,8 +144,8 @@ export default function DashboardPage() {
                   </CarouselItem>
                 ))}
               </CarouselContent>
-              {achievements.length > (window.innerWidth < 640 ? 3 : window.innerWidth < 1024 ? 4 : 5 ) && <CarouselPrevious />}
-              {achievements.length > (window.innerWidth < 640 ? 3 : window.innerWidth < 1024 ? 4 : 5 ) && <CarouselNext />}
+              {showCarouselArrows && <CarouselPrevious />}
+              {showCarouselArrows && <CarouselNext />}
             </Carousel>
           </CardContent>
         </Card>
@@ -177,6 +196,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-
-    
